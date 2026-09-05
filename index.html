@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gates Scholars Name Quest</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --accent-bg: #eef6f8;
+      --primary: #217889;
+      --text-main: #0f172a;
+      --text-sub: #64748b;
+      --border: #e2e8f0;
+      --pill: #f1f5f9;
+    }
+
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
+    body { background-color: var(--bg); color: var(--text-main); padding-bottom: 90px; }
+
+    .header { background: #fff; padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 18px; font-weight: 700; }
+    .header-btn { background: none; border: none; color: var(--primary); font-weight: 600; font-size: 14px; cursor: pointer; }
+
+    .container { max-width: 500px; margin: 0 auto; padding: 16px; }
+
+    .card { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 20px; margin-bottom: 16px; }
+    .card-banner { background: var(--accent-bg); border: 1px solid #d0e7eb; }
+
+    .badge { display: inline-block; background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+    .badge-success { background: #dcfce7; color: #15803d; }
+
+    h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    p { font-size: 14px; color: var(--text-sub); line-height: 1.4; }
+
+    .input-field { width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border); background: var(--pill); font-size: 15px; margin: 10px 0; outline: none; }
+    .input-field:disabled { background: #e2e8f0; cursor: not-allowed; }
+    
+    .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer; width: 100%; margin-top: 8px; }
+    .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    .chip-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; max-height: 120px; overflow-y: auto; }
+    .chip { background: var(--pill); border-radius: 16px; padding: 6px 12px; font-size: 13px; cursor: pointer; color: var(--text-main); }
+
+    .scholar-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .scholar-row:last-child { border-bottom: none; }
+    
+    .leaderboard-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .leaderboard-row:last-child { border-bottom: none; }
+    .leaderboard-left { display: flex; align-items: center; gap: 12px; }
+    .rank-tag { font-weight: 700; font-size: 15px; color: var(--text-sub); }
+
+    .avatar { width: 40px; height: 40px; border-radius: 50%; background: #f3e8ff; color: #7e22ce; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+
+    .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 8px 0; max-width: 500px; margin: 0 auto; }
+    .nav-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: var(--text-sub); font-size: 11px; font-weight: 500; cursor: pointer; }
+    .nav-item.active { color: var(--primary); font-weight: 700; }
+    .nav-icon { font-size: 20px; margin-bottom: 2px; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .stat-box { font-size: 32px; font-weight: 800; color: var(--text-main); margin: 6px 0; }
+
+    .found-list { margin-top: 12px; max-height: 180px; overflow-y: auto; }
+    .winner-empty-state { text-align: center; padding: 40px 20px; background: #f1f5f9; border-radius: 20px; border: 1px solid var(--border); }
+    .trophy-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.7; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1 id="header-title">Gates Scholars Name Quest</h1>
+    <button class="header-btn" onclick="switchTab('how-to-play')">How to play</button>
+  </div>
+
+  <div class="container">
+    
+    <!-- MY QUEST TAB -->
+    <div id="my-quest" class="tab-content active">
+      <div id="selection-screen">
+        <div class="card card-banner">
+          <h2>Welcome to the Gates Orientation</h2>
+          <p>Meet your assigned scholar, have a chat, and trade secret PINs to complete your chain.</p>
+        </div>
+
+        <div class="card">
+          <h2>Start with your name</h2>
+          <p>Select your name, then enter your personal 2-digit PIN to access your quest.</p>
+          <input type="text" id="name-search" class="input-field" placeholder="Type your name..." oninput="filterNames()">
+          <div class="chip-container" id="name-chips"></div>
+          <input type="password" id="own-pin-input" class="input-field" placeholder="Enter your personal 2-digit PIN" inputmode="numeric" maxlength="2" autocomplete="off">
+          <button class="btn" onclick="startQuest()">Verify & Start My Quest</button>
+          <p id="login-error" style="color:#e11d48; margin-top:8px; font-weight:600; display:none;"></p>
+        </div>
+
+        <div class="card">
+          <h2>Cohort directory</h2>
+          <p id="directory-count" style="margin-bottom: 12px;"></p>
+          <div id="directory-list"></div>
+        </div>
+      </div>
+
+      <div id="quest-screen" style="display:none;">
+        <div class="card card-banner">
+          <span class="badge">Current Target</span>
+          <h2 id="target-name" style="font-size:24px; margin-top:4px;">-</h2>
+          <p>Find this scholar, chat with them, and ask for their 2-digit PIN.</p>
+        </div>
+
+        <div class="card">
+          <h2>Enter Secret PIN</h2>
+          <p>Enter their PIN to unlock the next name in the chain.</p>
+          <input type="password" id="pin-input" class="input-field" placeholder="e.g. 42" inputmode="numeric" maxlength="2" autocomplete="off">
+          <button class="btn" id="verify-btn" onclick="verifyPIN()">Verify & Unlock Next</button>
+          <p id="pin-error" style="color:#e11d48; margin-top:8px; font-weight:600; display:none;"></p>
+        </div>
+
+        <div class="card">
+          <h2>Your Progress</h2>
+          <p>Scholars found:</p>
+          <div class="stat-box"><span id="user-progress">0</span> / <span id="total-target-count">81</span></div>
+          
+          <div style="margin-top: 14px;">
+            <p style="font-weight: 600; color: var(--text-main);">Scholars Unlocked:</p>
+            <div id="found-scholars-list" class="found-list"></div>
+          </div>
+
+          <button class="header-btn" onclick="resetUser()" style="margin-top:16px; color:#e11d48;">Change my name</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOW TO PLAY TAB -->
+    <div id="how-to-play" class="tab-content">
+      <div class="card card-banner">
+        <span class="badge">Gates Scholars Name Quest</span>
+        <h2>Find the whole cohort</h2>
+        <p>Meet every scholar in the circular chain. Each chat unlocks the next name.</p>
+      </div>
+
+      <div class="card">
+        <h2>1. Find your target</h2>
+        <p>Open My Quest and look for the scholar named on your screen.</p>
+      </div>
+
+      <div class="card">
+        <h2>2. Have a chat</h2>
+        <p>Meet the scholar and use this opportunity to have a chat.</p>
+      </div>
+
+      <div class="card">
+        <h2>3. Exchange PINs</h2>
+        <p>Ask for their secret two-digit PIN, enter it, and unlock your next name.</p>
+      </div>
+
+      <div class="card">
+        <span class="badge badge-success">Winning condition</span>
+        <h2 style="margin-top:6px;">Close your loop</h2>
+        <p>Complete successful PIN verifications to meet the whole cohort and return the chain to your own name.</p>
+      </div>
+    </div>
+
+    <!-- CELEBRATIONS TAB -->
+    <div id="celebrations" class="tab-content">
+      <div style="margin-bottom: 20px;">
+        <h2 style="font-size: 22px; font-weight: 700;">Live leaderboard</h2>
+        <p>Top five scholars by PINs collected. Updates automatically every 5 seconds.</p>
+      </div>
+
+      <div class="card" style="padding: 0; overflow: hidden;">
+        <div id="leaderboard-list"></div>
+      </div>
+
+      <div id="winner-container" class="winner-empty-state">
+        <div class="trophy-icon">🏆</div>
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 6px;">No quest winners yet</h3>
+        <p>The first completed loop will be celebrated here.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- NAVIGATION BAR -->
+  <div class="nav-bar">
+    <div class="nav-item active" onclick="switchTab('my-quest')" id="nav-my-quest">
+      <span class="nav-icon">🧭</span>
+      <span>My Quest</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('how-to-play')" id="nav-how-to-play">
+      <span class="nav-icon">📜</span>
+      <span>How to Play</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('celebrations')" id="nav-celebrations">
+      <span class="nav-icon">🏆</span>
+      <span>Celebrations</span>
+    </div>
+  </div>
+
+  <script>
+    const orientationCoordinators = new Set([
+      "Amber", "Blessing", "Amaury", "Donari", "Lottie", "Nicole",
+      "Catalina", "Alicja", "Adhib", "Ty", "Pascal", "Kristen", "Sabrina"
+    ]);
+
+    // Preserved original sequence without random shuffling
+    const scholars = [
+      {Name: "Paulina", PIN: "04"}, {Name: "Nicole", PIN: "17"}, {Name: "Emine Ziyatdin", PIN: "29"},
+      {Name: "Huda", PIN: "36"}, {Name: "Brian", PIN: "42"}, {Name: "Elena", PIN: "58"},
+      {Name: "Lengwe", PIN: "63"}, {Name: "Catherine", PIN: "71"}, {Name: "Ayobami Famurewa", PIN: "85"},
+      {Name: "Adhib", PIN: "93"}, {Name: "Luca", PIN: "11"}, {Name: "Kavita", PIN: "24"},
+      {Name: "Shinjini Bandopadhyay", PIN: "38"}, {Name: "Farris", PIN: "47"}, {Name: "Caroline Utermann", PIN: "52"},
+      {Name: "Mac MacKay", PIN: "66"}, {Name: "Rijul Jain", PIN: "73"}, {Name: "Yitong", PIN: "89"},
+      {Name: "Maddie", PIN: "95"}, {Name: "Blessing", PIN: "08"}, {Name: "Minh", PIN: "15"},
+      {Name: "Anna", PIN: "27"}, {Name: "Rameen Siddiqui", PIN: "34"}, {Name: "Mateu Font i Mugnaini", PIN: "49"},
+      {Name: "Larom Segev", PIN: "56"}, {Name: "Surya", PIN: "61"}, {Name: "Sharmila Dey", PIN: "78"},
+      {Name: "Hamish", PIN: "82"}, {Name: "Will", PIN: "90"}, {Name: "Catalina", PIN: "03"},
+      {Name: "Alicja", PIN: "19"}, {Name: "Peter", PIN: "22"}, {Name: "Smriti", PIN: "31"},
+      {Name: "Charlotte", PIN: "44"}, {Name: "Yein Park", PIN: "57"}, {Name: "Ty", PIN: "68"},
+      {Name: "Cassandra Vega", PIN: "75"}, {Name: "Maya Koka", PIN: "87"}, {Name: "Rishi", PIN: "96"},
+      {Name: "Sonia Paoli", PIN: "06"}, {Name: "Rafi", PIN: "12"}, {Name: "Prithi Anjana Srinivasan", PIN: "26"},
+      {Name: "Pascal", PIN: "39"}, {Name: "Daniel Rebbin", PIN: "41"}, {Name: "Alix de Saint-Aignan", PIN: "53"},
+      {Name: "Lottie", PIN: "64"}, {Name: "Mukta Dharmapurikar", PIN: "72"}, {Name: "Amber", PIN: "84"},
+      {Name: "Christina Kim", PIN: "91"}, {Name: "Lily", PIN: "09"}, {Name: "Aidyn Taishybay", PIN: "18"},
+      {Name: "Aurelia Lambert", PIN: "25"}, {Name: "Chudi", PIN: "33"}, {Name: "Amen", PIN: "46"},
+      {Name: "Kristen", PIN: "55"}, {Name: "Virgile Gobry", PIN: "67"}, {Name: "Eugenia", PIN: "79"},
+      {Name: "Stephora Cesar Alberi", PIN: "81"}, {Name: "Lea Wang", PIN: "94"}, {Name: "Carlos Mendonca", PIN: "02"},
+      {Name: "Clare Francis", PIN: "14"}, {Name: "Ofir", PIN: "21"}, {Name: "Thao Nguyen", PIN: "35"},
+      {Name: "Amaury", PIN: "48"}, {Name: "Tenzin", PIN: "59"}, {Name: "Marco Souza De Joode", PIN: "62"},
+      {Name: "Abhishek", PIN: "76"}, {Name: "Sabrina", PIN: "86"}, {Name: "Mitali Chowdhury", PIN: "97"},
+      {Name: "Maleakhi Wijaya", PIN: "07"}, {Name: "Sara Jane Renfroe", PIN: "10"}, {Name: "Divya Goyal", PIN: "16"},
+      {Name: "Jihad Hami", PIN: "28"}, {Name: "Donari", PIN: "37"}, {Name: "Dongyang Lan", PIN: "43"},
+      {Name: "Mark", PIN: "51"}, {Name: "Viviana", PIN: "69"}, {Name: "Jonibek Muhsinov", PIN: "74"},
+      {Name: "Shagun", PIN: "83"}, {Name: "Soham Mehta", PIN: "88"}, {Name: "Rose Abigail", PIN: "98"},
+      {Name: "John Wang", PIN: "05"}
+    ];
+
+    let currentUserIndex = -1;
+    let currentStep = 0;
+    let foundScholars = [];
+    let lockTimer = null;
+
+    function getInitials(name) {
+      return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    }
+
+    function init() {
+      document.getElementById('directory-count').innerText = `${scholars.length} scholars are taking part.`;
+      document.getElementById('total-target-count').innerText = scholars.length - 1;
+      
+      const dirList = document.getElementById('directory-list');
+      dirList.innerHTML = scholars.map(s => `
+        <div class="scholar-row">
+          <div class="avatar">${getInitials(s.Name)}</div>
+          <div>
+            <div style="font-weight:600; font-size:15px;">${s.Name}</div>
+            <div style="font-size:12px; color:var(--text-sub);">${orientationCoordinators.has(s.Name) ? "Orientation Coordinator" : "2026 Scholar"}</div>
+          </div>
+        </div>
+      `).join('');
+
+      renderChips(scholars);
+      checkSavedState();
+      checkCooldownState();
+      renderLeaderboard();
+      setInterval(renderLeaderboard, 5000);
+    }
+
+    function filterNames() {
+      const q = document.getElementById('name-search').value.toLowerCase();
+      const filtered = scholars.filter(s => s.Name.toLowerCase().includes(q));
+      renderChips(filtered);
+    }
+
+    function renderChips(list) {
+      const container = document.getElementById('name-chips');
+      container.innerHTML = list.slice(0, 6).map(s => `
+        <div class="chip" onclick="selectName('${s.Name}')">${s.Name}</div>
+      `).join('');
+    }
+
+    function selectName(name) {
+      document.getElementById('name-search').value = name;
+    }
+
+    function startQuest() {
+      const name = document.getElementById('name-search').value.trim();
+      const enteredPIN = document.getElementById('own-pin-input').value.trim();
+      const loginError = document.getElementById('login-error');
+
+      loginError.style.display = 'none';
+      loginError.innerText = '';
+
+      const idx = scholars.findIndex(s => s.Name.toLowerCase() === name.toLowerCase());
+
+      if (idx === -1) {
+        loginError.innerText = "Please select a valid scholar name from the list.";
+        loginError.style.display = 'block';
+        return;
+      }
+
+      if (!/^\d{2}$/.test(enteredPIN)) {
+        loginError.innerText = "Please enter your 2-digit personal PIN.";
+        loginError.style.display = 'block';
+        return;
+      }
+
+      if (enteredPIN !== scholars[idx].PIN) {
+        loginError.innerText = "That PIN does not match this name. Please check your personal PIN.";
+        loginError.style.display = 'block';
+        document.getElementById('own-pin-input').value = '';
+        return;
+      }
+
+      currentUserIndex = idx;
+      currentStep = 1;
+      foundScholars = [];
+      saveState();
+      updateQuestUI();
+    }
+
+    function verifyPIN() {
+      const lockUntil = localStorage.getItem('quest_lock_until');
+      if (lockUntil && Date.now() < parseInt(lockUntil)) {
+        return;
+      }
+
+      const enteredPIN = document.getElementById('pin-input').value.trim();
+      const targetIdx = (currentUserIndex + currentStep) % scholars.length;
+      const targetScholar = scholars[targetIdx];
+
+      if (enteredPIN === targetScholar.PIN) {
+        document.getElementById('pin-error').style.display = 'none';
+        document.getElementById('pin-input').value = '';
+        
+        if (!foundScholars.includes(targetScholar.Name)) {
+          foundScholars.push(targetScholar.Name);
+        }
+        
+        currentStep++;
+        saveState();
+        updateQuestUI();
+        renderLeaderboard();
+      } else {
+        trigger60sLock();
+      }
+    }
+
+    function trigger60sLock() {
+      const lockUntil = Date.now() + 60000;
+      localStorage.setItem('quest_lock_until', lockUntil);
+      checkCooldownState();
+    }
+
+    function checkCooldownState() {
+      const lockUntil = localStorage.getItem('quest_lock_until');
+      const errEl = document.getElementById('pin-error');
+      const pinInput = document.getElementById('pin-input');
+      const verifyBtn = document.getElementById('verify-btn');
+
+      if (lockUntil && Date.now() < parseInt(lockUntil)) {
+        if (lockTimer) clearInterval(lockTimer);
+        
+        pinInput.disabled = true;
+        verifyBtn.disabled = true;
+        errEl.style.display = 'block';
+
+        const updateTimer = () => {
+          const remaining = Math.ceil((parseInt(lockUntil) - Date.now()) / 1000);
+          if (remaining > 0) {
+            errEl.innerText = `Incorrect PIN. Try again in ${remaining}s.`;
+          } else {
+            clearInterval(lockTimer);
+            localStorage.removeItem('quest_lock_until');
+            pinInput.disabled = false;
+            verifyBtn.disabled = false;
+            errEl.style.display = 'none';
+            errEl.innerText = '';
+          }
+        };
+
+        updateTimer();
+        lockTimer = setInterval(updateTimer, 1000);
+      }
+    }
+
+    function updateQuestUI() {
+      document.getElementById('selection-screen').style.display = 'none';
+      document.getElementById('quest-screen').style.display = 'block';
+
+      const targetIdx = (currentUserIndex + currentStep) % scholars.length;
+      const targetScholar = scholars[targetIdx];
+
+      if (currentStep >= scholars.length) {
+        document.getElementById('target-name').innerText = "🎉 Quest Completed!";
+        document.getElementById('user-progress').innerText = scholars.length - 1;
+      } else {
+        document.getElementById('target-name').innerText = targetScholar.Name;
+        document.getElementById('user-progress').innerText = currentStep - 1;
+      }
+
+      renderFoundList();
+    }
+
+    function renderFoundList() {
+      const container = document.getElementById('found-scholars-list');
+      if (foundScholars.length === 0) {
+        container.innerHTML = '<p style="font-size:13px; color:var(--text-sub);">No scholars unlocked yet.</p>';
+      } else {
+        container.innerHTML = foundScholars.map(name => `
+          <div class="scholar-row" style="padding: 6px 0;">
+            <div class="avatar" style="width:30px; height:30px; font-size:11px;">${getInitials(name)}</div>
+            <div style="font-size:14px; font-weight:600; color:var(--text-main);">${name}</div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem('quest_user', currentUserIndex);
+      localStorage.setItem('quest_step', currentStep);
+      localStorage.setItem('quest_found_scholars', JSON.stringify(foundScholars));
+    }
+
+    function checkSavedState() {
+      const savedUser = localStorage.getItem('quest_user');
+      const savedStep = localStorage.getItem('quest_step');
+      const savedFound = localStorage.getItem('quest_found_scholars');
+      
+      if (savedUser !== null && savedStep !== null) {
+        currentUserIndex = parseInt(savedUser);
+        currentStep = parseInt(savedStep);
+        foundScholars = savedFound ? JSON.parse(savedFound) : [];
+        updateQuestUI();
+      }
+    }
+
+    function resetUser() {
+      localStorage.removeItem('quest_user');
+      localStorage.removeItem('quest_step');
+      localStorage.removeItem('quest_found_scholars');
+      document.getElementById('selection-screen').style.display = 'block';
+      document.getElementById('quest-screen').style.display = 'none';
+      document.getElementById('own-pin-input').value = '';
+      document.getElementById('login-error').style.display = 'none';
+    }
+
+    function renderLeaderboard() {
+      let leaderboardData = scholars.map((s, idx) => {
+        let score = 0;
+        if (currentUserIndex === idx) {
+          score = Math.max(0, currentStep - 1);
+        }
+        return { name: s.Name, pins: score, isUser: currentUserIndex === idx };
+      });
+
+      leaderboardData.sort((a, b) => b.pins - a.pins || a.name.localeCompare(b.name));
+
+      const top5 = leaderboardData.slice(0, 5);
+      const lbContainer = document.getElementById('leaderboard-list');
+
+      lbContainer.innerHTML = top5.map((item, index) => `
+        <div class="leaderboard-row">
+          <div class="leaderboard-left">
+            <div class="avatar">${getInitials(item.name)}</div>
+            <div>
+              <div style="font-weight:600; font-size:15px; color:var(--text-main);">${item.name}</div>
+              <div style="font-size:13px; color:var(--text-sub);">${item.pins} PIN${item.pins === 1 ? '' : 's'} collected</div>
+            </div>
+          </div>
+          <div class="rank-tag">#${index + 1}</div>
+        </div>
+      `).join('');
+
+      const winnerContainer = document.getElementById('winner-container');
+      const firstWinner = leaderboardData.find(item => item.pins >= scholars.length - 1);
+
+      if (firstWinner) {
+        winnerContainer.className = "card card-banner";
+        winnerContainer.style.textAlign = "center";
+        winnerContainer.innerHTML = `
+          <div style="font-size: 32px; margin-bottom: 8px;">👑</div>
+          <span class="badge badge-success">First Winner</span>
+          <h3 style="font-size: 20px; font-weight: 800; margin: 6px 0;">${firstWinner.name}</h3>
+          <p>Successfully completed their entire quest loop!</p>
+        `;
+      }
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById(tabId).classList.add('active');
+      document.getElementById('nav-' + tabId).classList.add('active');
+    }
+
+    init();
+  </script>
+</body>
+</html>
