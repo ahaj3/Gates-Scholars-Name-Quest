@@ -62,6 +62,7 @@
     .tab-content.active { display: block; }
     .stat-box { font-size: 32px; font-weight: 800; color: var(--text-main); margin: 6px 0; }
 
+    .found-list { margin-top: 12px; max-height: 180px; overflow-y: auto; }
     .winner-empty-state { text-align: center; padding: 40px 20px; background: #f1f5f9; border-radius: 20px; border: 1px solid var(--border); }
     .trophy-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.7; }
   </style>
@@ -119,7 +120,13 @@
           <h2>Your Progress</h2>
           <p>Scholars found:</p>
           <div class="stat-box"><span id="user-progress">0</span> / <span id="total-target-count">81</span></div>
-          <button class="header-btn" onclick="resetUser()" style="margin-top:8px; color:#e11d48;">Change my name</button>
+          
+          <div style="margin-top: 14px;">
+            <p style="font-weight: 600; color: var(--text-main);">Scholars Unlocked:</p>
+            <div id="found-scholars-list" class="found-list"></div>
+          </div>
+
+          <button class="header-btn" onclick="resetUser()" style="margin-top:16px; color:#e11d48;">Change my name</button>
         </div>
       </div>
     </div>
@@ -196,7 +203,8 @@
       "Catalina", "Alicja", "Adhib", "Ty", "Pascal", "Kristen", "Sabrina"
     ]);
 
-    const rawScholars = [
+    // Preserved original sequence without random shuffling
+    const scholars = [
       {Name: "Paulina", PIN: "04"}, {Name: "Nicole", PIN: "17"}, {Name: "Emine Ziyatdin", PIN: "29"},
       {Name: "Huda", PIN: "36"}, {Name: "Brian", PIN: "42"}, {Name: "Elena", PIN: "58"},
       {Name: "Lengwe", PIN: "63"}, {Name: "Catherine", PIN: "71"}, {Name: "Ayobami Famurewa", PIN: "85"},
@@ -227,27 +235,9 @@
       {Name: "John Wang", PIN: "05"}
     ];
 
-    // Seeded pseudo-random shuffle to create non-alphabetical circular loop across all clients
-    function createSeededLoop(arr, seed = 12345) {
-      let shuffled = [...arr];
-      let m = shuffled.length, t, i;
-      let rand = function() {
-        seed = (seed * 9301 + 49297) % 233280;
-        return seed / 233280;
-      };
-      while (m) {
-        i = Math.floor(rand() * m--);
-        t = shuffled[m];
-        shuffled[m] = shuffled[i];
-        shuffled[i] = t;
-      }
-      return shuffled;
-    }
-
-    const scholars = createSeededLoop(rawScholars);
-
     let currentUserIndex = -1;
     let currentStep = 0;
+    let foundScholars = [];
     let lockTimer = null;
 
     function getInitials(name) {
@@ -324,6 +314,7 @@
 
       currentUserIndex = idx;
       currentStep = 1;
+      foundScholars = [];
       saveState();
       updateQuestUI();
     }
@@ -341,6 +332,11 @@
       if (enteredPIN === targetScholar.PIN) {
         document.getElementById('pin-error').style.display = 'none';
         document.getElementById('pin-input').value = '';
+        
+        if (!foundScholars.includes(targetScholar.Name)) {
+          foundScholars.push(targetScholar.Name);
+        }
+        
         currentStep++;
         saveState();
         updateQuestUI();
@@ -402,19 +398,39 @@
         document.getElementById('target-name').innerText = targetScholar.Name;
         document.getElementById('user-progress').innerText = currentStep - 1;
       }
+
+      renderFoundList();
+    }
+
+    function renderFoundList() {
+      const container = document.getElementById('found-scholars-list');
+      if (foundScholars.length === 0) {
+        container.innerHTML = '<p style="font-size:13px; color:var(--text-sub);">No scholars unlocked yet.</p>';
+      } else {
+        container.innerHTML = foundScholars.map(name => `
+          <div class="scholar-row" style="padding: 6px 0;">
+            <div class="avatar" style="width:30px; height:30px; font-size:11px;">${getInitials(name)}</div>
+            <div style="font-size:14px; font-weight:600; color:var(--text-main);">${name}</div>
+          </div>
+        `).join('');
+      }
     }
 
     function saveState() {
       localStorage.setItem('quest_user', currentUserIndex);
       localStorage.setItem('quest_step', currentStep);
+      localStorage.setItem('quest_found_scholars', JSON.stringify(foundScholars));
     }
 
     function checkSavedState() {
       const savedUser = localStorage.getItem('quest_user');
       const savedStep = localStorage.getItem('quest_step');
+      const savedFound = localStorage.getItem('quest_found_scholars');
+      
       if (savedUser !== null && savedStep !== null) {
         currentUserIndex = parseInt(savedUser);
         currentStep = parseInt(savedStep);
+        foundScholars = savedFound ? JSON.parse(savedFound) : [];
         updateQuestUI();
       }
     }
@@ -422,6 +438,7 @@
     function resetUser() {
       localStorage.removeItem('quest_user');
       localStorage.removeItem('quest_step');
+      localStorage.removeItem('quest_found_scholars');
       document.getElementById('selection-screen').style.display = 'block';
       document.getElementById('quest-screen').style.display = 'none';
       document.getElementById('own-pin-input').value = '';
