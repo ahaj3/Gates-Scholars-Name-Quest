@@ -73,10 +73,12 @@
 
         <div class="card">
           <h2>Start with your name</h2>
-          <p>Type and find your name.</p>
+          <p>Select your name, then enter your personal 2-digit PIN to access your quest.</p>
           <input type="text" id="name-search" class="input-field" placeholder="Type your name..." oninput="filterNames()">
           <div class="chip-container" id="name-chips"></div>
-          <button class="btn" onclick="startQuest()">Start my quest</button>
+          <input type="password" id="own-pin-input" class="input-field" placeholder="Enter your personal 2-digit PIN" inputmode="numeric" maxlength="2" autocomplete="off">
+          <button class="btn" onclick="startQuest()">Verify & Start My Quest</button>
+          <p id="login-error" style="color:#e11d48; margin-top:8px; font-weight:600; display:none;"></p>
         </div>
 
         <div class="card">
@@ -96,14 +98,14 @@
         <div class="card">
           <h2>Enter Secret PIN</h2>
           <p>Enter their PIN to unlock the next name in the chain.</p>
-          <input type="number" id="pin-input" class="input-field" placeholder="e.g. 42" maxlength="2">
+          <input type="password" id="pin-input" class="input-field" placeholder="e.g. 42" inputmode="numeric" maxlength="2" autocomplete="off">
           <button class="btn" onclick="verifyPIN()">Verify & Unlock Next</button>
           <p id="pin-error" style="color:#e11d48; margin-top:8px; font-weight:600; display:none;">Incorrect PIN. Try again!</p>
         </div>
 
         <div class="card">
           <h2>Your Progress</h2>
-          <p>Scholars unlocked:</p>
+          <p>Scholars found:</p>
           <div class="stat-box"><span id="user-progress">0</span> / <span id="total-target-count">81</span></div>
           <button class="header-btn" onclick="resetUser()" style="margin-top:8px; color:#e11d48;">Change my name</button>
         </div>
@@ -144,7 +146,7 @@
     <div id="celebrations" class="tab-content">
       <div class="card">
         <p>Quests completed</p>
-        <div class="stat-box">0 / 82</div>
+        <div class="stat-box">0 / <span id="completed-count">0</span></div>
         <p>scholars who closed their loop</p>
       </div>
 
@@ -175,6 +177,11 @@
 
   <script>
     // 82 Scholars initialized from dataset
+    const orientationCoordinators = new Set([
+      "Amber", "Blessing", "Amaury", "Donari", "Lottie", "Nicole",
+      "Catalina", "Alicja", "Adhib", "Ty", "Pascal", "Kristen", "Sabrina"
+    ]);
+
     const scholars = [
       {Name: "Paulina", PIN: "04"}, {Name: "Nicole", PIN: "17"}, {Name: "Emine Ziyatdin", PIN: "29"},
       {Name: "Huda", PIN: "36"}, {Name: "Brian", PIN: "42"}, {Name: "Elena", PIN: "58"},
@@ -223,7 +230,7 @@
           <div class="avatar">${getInitials(s.Name)}</div>
           <div>
             <div style="font-weight:600; font-size:15px;">${s.Name}</div>
-            <div style="font-size:12px; color:var(--text-sub);">2026 Scholar</div>
+            <div style="font-size:12px; color:var(--text-sub);">${orientationCoordinators.has(s.Name) ? "Orientation Coordinator" : "2026 Scholar"}</div>
           </div>
         </div>
       `).join('');
@@ -251,11 +258,33 @@
 
     function startQuest() {
       const name = document.getElementById('name-search').value.trim();
+      const enteredPIN = document.getElementById('own-pin-input').value.trim();
+      const loginError = document.getElementById('login-error');
+
+      loginError.style.display = 'none';
+      loginError.innerText = '';
+
       const idx = scholars.findIndex(s => s.Name.toLowerCase() === name.toLowerCase());
+
       if (idx === -1) {
-        alert("Please select a valid scholar name from the list.");
+        loginError.innerText = "Please select a valid scholar name from the list.";
+        loginError.style.display = 'block';
         return;
       }
+
+      if (!/^\d{2}$/.test(enteredPIN)) {
+        loginError.innerText = "Please enter your 2-digit personal PIN.";
+        loginError.style.display = 'block';
+        return;
+      }
+
+      if (enteredPIN !== scholars[idx].PIN) {
+        loginError.innerText = "That PIN does not match this name. Please check your personal PIN.";
+        loginError.style.display = 'block';
+        document.getElementById('own-pin-input').value = '';
+        return;
+      }
+
       currentUserIndex = idx;
       currentStep = 1;
       saveState();
@@ -314,6 +343,8 @@
       localStorage.removeItem('quest_step');
       document.getElementById('selection-screen').style.display = 'block';
       document.getElementById('quest-screen').style.display = 'none';
+      document.getElementById('own-pin-input').value = '';
+      document.getElementById('login-error').style.display = 'none';
     }
 
     function switchTab(tabId) {
