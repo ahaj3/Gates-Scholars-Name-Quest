@@ -53,7 +53,7 @@
 
     .avatar { width: 40px; height: 40px; border-radius: 50%; background: #f3e8ff; color: #7e22ce; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
 
-    .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 8px 0; max-width: 500px; margin: 0 auto; }
+    .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid var(--border); display: flex; justify-around: space-around; padding: 8px 0; max-width: 500px; margin: 0 auto; }
     .nav-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: var(--text-sub); font-size: 11px; font-weight: 500; cursor: pointer; }
     .nav-item.active { color: var(--primary); font-weight: 700; }
     .nav-icon { font-size: 20px; margin-bottom: 2px; }
@@ -65,6 +65,7 @@
     .found-list { margin-top: 12px; max-height: 180px; overflow-y: auto; }
     .winner-empty-state { text-align: center; padding: 40px 20px; background: #f1f5f9; border-radius: 20px; border: 1px solid var(--border); }
     .trophy-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.7; }
+    .btn-row { display: flex; gap: 10px; margin-top: 16px; }
   </style>
 </head>
 <body>
@@ -126,7 +127,10 @@
             <div id="found-scholars-list" class="found-list"></div>
           </div>
 
-          <button class="header-btn" onclick="resetUser()" style="margin-top:16px; color:#e11d48;">Change my name</button>
+          <div class="btn-row">
+            <button class="header-btn" onclick="switchUser()">Change my name</button>
+            <button class="header-btn" onclick="restartCurrentQuest()" style="color:#e11d48;">Reset Progress</button>
+          </div>
         </div>
       </div>
     </div>
@@ -203,7 +207,6 @@
       "Catalina", "Alicja", "Adhib", "Ty", "Pascal", "Kristen", "Sabrina"
     ]);
 
-    // Preserved original sequence without random shuffling
     const scholars = [
       {Name: "Paulina", PIN: "04"}, {Name: "Nicole", PIN: "17"}, {Name: "Emine Ziyatdin", PIN: "29"},
       {Name: "Huda", PIN: "36"}, {Name: "Brian", PIN: "42"}, {Name: "Elena", PIN: "58"},
@@ -236,7 +239,7 @@
     ];
 
     let currentUserIndex = -1;
-    let currentStep = 0;
+    let currentStep = 1;
     let foundScholars = [];
     let lockTimer = null;
 
@@ -313,8 +316,20 @@
       }
 
       currentUserIndex = idx;
-      currentStep = 1;
-      foundScholars = [];
+      
+      // Load saved progress specifically for this user if it exists
+      const userProgressKey = `quest_progress_${scholars[idx].Name}`;
+      const savedData = localStorage.getItem(userProgressKey);
+      
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        currentStep = parsed.step || 1;
+        foundScholars = parsed.found || [];
+      } else {
+        currentStep = 1;
+        foundScholars = [];
+      }
+
       saveState();
       updateQuestUI();
     }
@@ -417,41 +432,62 @@
     }
 
     function saveState() {
-      localStorage.setItem('quest_user', currentUserIndex);
-      localStorage.setItem('quest_step', currentStep);
-      localStorage.setItem('quest_found_scholars', JSON.stringify(foundScholars));
+      if (currentUserIndex < 0) return;
+      localStorage.setItem('quest_active_user', currentUserIndex);
+      
+      const userName = scholars[currentUserIndex].Name;
+      const userProgressKey = `quest_progress_${userName}`;
+      
+      localStorage.setItem(userProgressKey, JSON.stringify({
+        step: currentStep,
+        found: foundScholars
+      }));
     }
 
     function checkSavedState() {
-      const savedUser = localStorage.getItem('quest_user');
-      const savedStep = localStorage.getItem('quest_step');
-      const savedFound = localStorage.getItem('quest_found_scholars');
+      const savedUser = localStorage.getItem('quest_active_user');
       
-      if (savedUser !== null && savedStep !== null) {
+      if (savedUser !== null) {
         currentUserIndex = parseInt(savedUser);
-        currentStep = parseInt(savedStep);
-        foundScholars = savedFound ? JSON.parse(savedFound) : [];
+        const userName = scholars[currentUserIndex].Name;
+        const savedData = localStorage.getItem(`quest_progress_${userName}`);
+        
+        if (savedData) {
+          const parsed = JSON.parse(savedData);
+          currentStep = parsed.step || 1;
+          foundScholars = parsed.found || [];
+        }
         updateQuestUI();
       }
     }
 
-    function resetUser() {
-      localStorage.removeItem('quest_user');
-      localStorage.removeItem('quest_step');
-      localStorage.removeItem('quest_found_scholars');
+    function switchUser() {
+      localStorage.removeItem('quest_active_user');
       document.getElementById('selection-screen').style.display = 'block';
       document.getElementById('quest-screen').style.display = 'none';
       document.getElementById('own-pin-input').value = '';
       document.getElementById('login-error').style.display = 'none';
     }
 
+    function restartCurrentQuest() {
+      if (confirm("Are you sure you want to reset your progress back to 0?")) {
+        currentStep = 1;
+        foundScholars = [];
+        saveState();
+        updateQuestUI();
+        renderLeaderboard();
+      }
+    }
+
     function renderLeaderboard() {
-      let leaderboardData = scholars.map((s, idx) => {
+      let leaderboardData = scholars.map((s) => {
+        const savedData = localStorage.getItem(`quest_progress_${s.Name}`);
         let score = 0;
-        if (currentUserIndex === idx) {
-          score = Math.max(0, currentStep - 1);
+        if (savedData) {
+          const parsed = JSON.parse(savedData);
+          score = Math.max(0, (parsed.step || 1) - 1);
         }
-        return { name: s.Name, pins: score, isUser: currentUserIndex === idx };
+        return { name: s.Name, pins: score };
       });
 
       leaderboardData.sort((a, b) => b.pins - a.pins || a.name.localeCompare(b.name));
